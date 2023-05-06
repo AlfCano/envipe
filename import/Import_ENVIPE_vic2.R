@@ -143,7 +143,7 @@ meta.vic2$nombres  <- rownames_to_column(meta.vic2$nombres ,var="id") #usamos la
 ## Crear el objeto factrs
 #Este objeto establece la lista de varibles que se convertirán en factores.
 meta.vic2$factrs <- meta.vic2$nombres # En primer lugar copiamos el objeto nombres al objeto f.
-meta.vic2$factrs <- meta.vic2$factrs[-(c(1:6,8,10,12,14,17,22,25,27,29,
+meta.vic2$factrs <- meta.vic2$factrs[-(c(1:8,10,12,14,17,22,25,27,29,
                                         34,36,42,48,54,66,72,79,103,121,123,
                                         125,127,129,131,133,135,137,139,
                                         142:145,147:149)),] #  elimina variables que no llevan etiquetas. El 22 es la clave de carrera cuyo catálogo CSV no tiene nombres
@@ -215,7 +215,7 @@ etq,                                        # en el marco de datos "etq"
 
                                                                 
 ## Selección de variables que requieren etiquetas de valor    
-meta.vic2$etq.val <- meta.vic2$factrs[-(c(4:5)),]  # Crea el objeto etq.val y se descartan los objetos que ya tienen etiquetas de valor.
+meta.vic2$etq.val <- meta.vic2$factrs[-(c(3:4)),]  # Crea el objeto etq.val y se descartan los objetos que ya tienen etiquetas de valor.
                                                     # En este caso nombres de entidad (variable 5) y municipio (variable 6) en este data.frame.
 ## Asignar etiqueta de nivel a cada valor.
 local({
