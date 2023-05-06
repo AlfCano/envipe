@@ -228,6 +228,6 @@ f,                                    # en el marco de datos f para extraer las 
 df[[i]] <- v                          # Posteriormente, copia la variable etiquetada en el marco de datos df con el nombre corresponiente a la observación "i".
 }
 ## Imprimir el resultado
-.GlobalEnv$meta.sdem$data <- df       # Finalmente asigna el marco de datos resultante al objeto den el entorno global.
+.GlobalEnv$meta.sdem$data <- df       # Finalmente asigna el marco de datos resultante al objeto en el entorno global.
 })
-
+				      #Fin del script.
