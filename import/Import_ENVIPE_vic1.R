@@ -143,7 +143,7 @@ meta.vic1$nombres  <- rownames_to_column(meta.vic1$nombres ,var="id") #usamos la
 ## Crear el objeto factrs
 #Este objeto establece la lista de varibles que se convertirán en factores.
 meta.vic1$factrs <- meta.vic1$nombres # En primer lugar copiamos el objeto nombres al objeto f.
-meta.vic1$factrs <- meta.vic1$factrs[-(c(1:8,10,12,14,111,174:177,180,181)),] #  elimina variables que no llevan etiquetas. El 22 es la clave de carrera cuyo catálogo CSV no tiene nombres
+meta.vic1$factrs <- meta.vic1$factrs[-(c(1:8,10,12,14,111,174:177,179:181)),] #  elimina variables que no llevan etiquetas. El 22 es la clave de carrera cuyo catálogo CSV no tiene nombres
 
 ##Importar el archivo csv con el conjunto de datos
 
