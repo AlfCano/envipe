@@ -133,7 +133,7 @@ meta.sdem$nombres <- data.frame(                       # Se usa la función data
 #library(tidyr)                                  # Se carga la librería "tidyr".
 #meta.sdem$nombres <- drop_na(meta.sdem$nombres) # Se eliminan filas con NA con la función "drop_na".
 
-# Los metadatos ENVIPE contiene valores duplicados en la variable catálogo, para eliminarlo usamos la función "duplicated" y el poerador "!" (not).
+# Los metadatos ENVIPE contiene valores duplicados en la variable catálogo, para eliminarlo usamos la función "duplicated" y el operador "!" (not).
 meta.sdem$nombres <-meta.sdem$nombres[!duplicated(meta.sdem$nombres$catalogo), ] # Para filtran los valores duplicados por filas se usa la notación
                                                                                  # con corchetes simples de la forma "[FILAS,COLUMNAS]",
                                                                                  # en esta notación se pueden usar números o nombres para acceder a los índices.
