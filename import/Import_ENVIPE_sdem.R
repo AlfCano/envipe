@@ -143,7 +143,7 @@ meta.sdem$nombres  <- rownames_to_column(meta.sdem$nombres ,var="id") #usamos la
 ## Crear el objeto factrs
 #Este objeto establece la lista de varibles que se convertirán en factores.
 meta.sdem$factrs <- meta.sdem$nombres # En primer lugar copiamos el objeto nombres al objeto f.
-meta.sdem$factrs <- meta.sdem$factrs[-(c(1:6,8,11,15,17,22,23,25:26)),] # Elimina variables que no llevan etiquetas con valores pntuales y rangos.
+meta.sdem$factrs <- meta.sdem$factrs[-(c(1:8,11,15,17,22,23,25:26)),] # Elimina variables que no llevan etiquetas con valores pntuales y rangos.
                                                                   # La mayoría son valores de cadena y números.
                                                                   # El 22 es la clave de carrera cuyo catálogo CSV no tiene nombres.
                                                                   
@@ -207,7 +207,7 @@ etq,                                        # en el marco de datos "etq"
 })
 
 ## Selección de variables que requieren etiquetas de valor 
-meta.sdem$etq.val <- meta.sdem$factrs[-(c(7,8)),]   # Crea el objeto etq.val y se descartan los objetos que ya tienen etiquetas de valor.
+meta.sdem$etq.val <- meta.sdem$factrs[-(c(6,7)),]   # Crea el objeto etq.val y se descartan los objetos que ya tienen etiquetas de valor.
                                                     # En este caso nombres de entidad (variable 7) y municipio (variable 8) en este data.frame.
 ## Asignar etiqueta de nivel a cada valor.
 local({
