@@ -207,8 +207,8 @@ etq,                                        # en el marco de datos "etq"
 })
 
 ## Selección de variables que requieren etiquetas de valor 
-meta.sdem$etq.val <- meta.sdem$factrs[-(c(8,9)),]   # Crea el objeto etq.val y se descartan los objetos que ya tienen etiquetas de valor.
-                                                    # En este caso nombres de entidad (variable 8) y municipio (variable 9) en este data.frame.
+meta.sdem$etq.val <- meta.sdem$factrs[-(c(7,8)),]   # Crea el objeto etq.val y se descartan los objetos que ya tienen etiquetas de valor.
+                                                    # En este caso nombres de entidad (variable 7) y municipio (variable 8) en este data.frame.
 ## Asignar etiqueta de nivel a cada valor.
 local({
 ## Preparar
