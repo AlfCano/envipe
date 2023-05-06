@@ -146,7 +146,7 @@ meta.vic2$factrs <- meta.vic2$nombres # En primer lugar copiamos el objeto nombr
 meta.vic2$factrs <- meta.vic2$factrs[-(c(1:8,10,12,14,17,22,25,27,29,
                                         34,36,42,48,54,66,72,79,103,121,123,
                                         125,127,129,131,133,135,137,139,
-                                        142:145,147:149)),] #  elimina variables que no llevan etiquetas. El 22 es la clave de carrera cuyo catálogo CSV no tiene nombres
+                                        141:145,147:149)),] #  elimina variables que no llevan etiquetas. El 22 es la clave de carrera cuyo catálogo CSV no tiene nombres
 
 ##Importar el archivo csv con el conjunto de datos
 
@@ -189,10 +189,10 @@ f[[e]]<- as.factor(f[[e]])                   # Se usa la función "as.factor" ca
 meta.vic2[["data"]][,c(10,17,22,25,27,29,                                                            # La función "c" envía el resultado a las variables seleccionadas.
                        34,36,42,48,54,66,72,79,103,121,123,
                        125,127,129,131,133,135,137,139,
-                       142:145)] <- sapply(meta.vic2[["data"]][,c(10,17,22,25,27,29,                 # La función sapply aplica la función a cada vactor seleccionado dentro del marco de datos.
+                       141:145)] <- sapply(meta.vic2[["data"]][,c(10,17,22,25,27,29,                 # La función sapply aplica la función a cada vactor seleccionado dentro del marco de datos.
                                                                 34,36,42,48,54,66,72,79,103,121,123, # La función "c" selecciona las variables a coercionarse a numéricas.
                                                                 125,127,129,131,133,135,137,139,     # Lista de variables deseadas, entre ellas edad y factores de expnsión.
-                                                                142:145)], as.numeric)               # Función para coercionar un variable a tipo "numric".
+                                                                141:145)], as.numeric)               # Función para coercionar un variable a tipo "numric".
 
 ## Asignación de etiquetas de variable en RKWard con rk.set.label
 # Las etiquetas de variable se asignan después de haber coercionado los objetos a factores y números.
