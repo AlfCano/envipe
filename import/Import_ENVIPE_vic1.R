@@ -184,7 +184,7 @@ f[[e]]<- as.factor(f[[e]])                   # Se usa la función "as.factor" ca
 
 ## Coerciona variables selecccionadas a tipo numérico
 
-meta.vic1[["data"]][,c(10,174:177)] <- sapply(meta.vic1[["data"]][,c(10,174:177)], as.numeric)  # La función "c" envía el resultado a las variables seleccionadas.
+meta.vic1[["data"]][,c(10,111,174:177)] <- sapply(meta.vic1[["data"]][,c(10,111,174:177)], as.numeric)  # La función "c" envía el resultado a las variables seleccionadas.
                                                                                                 # La función sapply aplica la función a cada vactor seleccionado dentro del marco de datos.
                                                                                                 # La función "c" selecciona las variables a coercionarse a numéricas.
                                                                                                 # Lista de variables deseadas, entre ellas edad y factores de expnsión.
