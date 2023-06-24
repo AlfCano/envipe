@@ -97,7 +97,7 @@ ct[[i]] <- f}                       # Reinsertamos f en la lista l con la nueva 
 # Seleccionamos el directorio ".../dicionario_de_datos".
 local({
 ## Computar
-setwd("/home/cano/Escritorio/ENOE/ENVIPE/conjunto_de_datos_TSDem_ENVIPE_2022/diccionario_de_datos") 
+setwd("conjunto_de_datos_TSDem_ENVIPE_2022/diccionario_de_datos") #Seleccionar el diccionario de datos.
 })
 
 ##Importar diccionario de datos
