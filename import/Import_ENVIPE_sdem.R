@@ -80,7 +80,7 @@ local({
 library(stringr)                    # Cargamos la librería "stringr" para manipular cadenas de caracteres.
 ##Computar
 ct <- meta.sdem[["cat"]]            # Se copia la lista "cat" al objeto "ct" en el entorno local, para simplificar la notación.
-lst_nom <- names(ct)                # Extramemos los nombres de los objetos que contiene la lista "ct" en el objeto "lst_nom."
+lst_nom <- names(ct)                # Extraemos los nombres de los objetos que contiene la lista "ct" en el objeto "lst_nom."
 for (i in lst_nom){                 # Iniciamos el loop para cada observación "i" en la lista "lst_nom".
 f <- ct[[i]]                        # Extraemos un data.frame de la lista "ct" que se corresponde con los nombres enlistados en "lst_nom".
 f$descrip <- str_squish(f$descrip)  # Limpiamos las cadenas en la columna descrip dentro de la lista "cat".
