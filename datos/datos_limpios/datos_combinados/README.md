@@ -1,6 +1,6 @@
 # Repositorio para el Procesamiento y Análisis de la Encuesta ENVIPE
 
-![R Linter](https://github.com/AlfCano/envipe/actions/workflows/linter.yaml/badge.svg)
+[![R Linter](https://github.com/AlfCano/envipe/actions/workflows/lintr.yml/badge.svg)](https://github.com/AlfCano/envipe/actions/workflows/lintr.yml)
 
 ## 1. Resumen
 
