@@ -1,0 +1,41 @@
+# Nombre del workflow que aparecerá en la pestaña "Actions"
+name: R Linter
+
+# Define cuándo se debe ejecutar este workflow
+on:
+  # Ejecutar en cada push a la rama principal
+  push:
+    branches: [ main ]
+  # También ejecutar en cada pull request dirigido a la rama principal
+  pull_request:
+    branches: [ main ]
+
+# Define los trabajos (jobs) que se ejecutarán
+jobs:
+  lint-r-code:
+    # El tipo de máquina virtual en la que se ejecutará
+    runs-on: ubuntu-latest
+
+    # Los pasos que se ejecutarán en secuencia
+    steps:
+      # 1. Descarga una copia de tu repositorio en la máquina virtual
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # 2. Configura el entorno de R
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release' # Usamos 'release' para obtener siempre la última versión de R
+
+      # 3. Instala el paquete lintr directamente
+      #    (Este paso reemplaza el bloque que causaba el error)
+      - name: Install lintr package
+        run: install.packages('lintr')
+        shell: Rscript {0}
+
+      # 4. Ejecuta el linter sobre tus archivos R
+      #    lint_dir() analiza todos los archivos .R en el directorio del proyecto
+      - name: Lint R code
+        run: lintr::lint_dir(path = "R/")
+        shell: Rscript {0}
