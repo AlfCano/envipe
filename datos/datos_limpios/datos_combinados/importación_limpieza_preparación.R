@@ -262,9 +262,15 @@ rk.set.label(combined_df$NOM_MUN, label = "Nombre del municipio")
 # --- 6b. Unificar niveles de respuesta en variables 'AP4_2_*' ---
 # Se unifican los niveles "Sí" y "SÍ" en un solo nivel "Sí" para todas
 # las columnas que comienzan con "AP4_2_", usando dplyr y forcats.
+require("dplyr")
+require("forcats")
+
 combined_df <- combined_df %>%
   mutate(across(starts_with("AP4_2_"),
                 ~ fct_recode(., "Sí" = "SÍ")))
+
+combined_df <- combined_df %>%
+  mutate(across(where(is.factor), ~ fct_relabel(., ~ trimws(.))))
 
 cat("--- Fase 6 completada. ---\n\n")
 
