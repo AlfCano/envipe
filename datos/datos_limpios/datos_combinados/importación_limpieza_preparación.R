@@ -68,107 +68,126 @@ envipe_list <- local({
   return(envipe_data_list)
 })
 
-
 # =============================================================================
-# FASE 3: ESTANDARIZACIÓN DE ESTRUCTURA Y TIPOS DE DATOS (CONFORMIDAD)
+# FASE 3: ARMONIZACIÓN INTEGRAL CON PRESERVACIÓN DE ETIQUETAS (VERSIÓN FINAL)
 # =============================================================================
-# Objetivo: Garantizar que todos los data frames en la lista tengan la misma
-#           estructura (columnas y tipos de datos) antes de combinarlos.
-#           Esto previene errores comunes al usar dplyr::bind_rows().
-
 envipe_list <- local({
-  cat("--- Ejecutando Fase 3: Forzando conformidad con plantilla ---\n")
+  cat("--- Ejecutando Fase 3: Armonización Integral con Preservación de Etiquetas ---\n")
 
-  # 3a. Definir plantilla y lista de trabajo
-  # El data frame más reciente (el último en la lista) se usa como "plantilla"
-  # o estándar de oro para los tipos de datos.
-  template_df <- envipe_list[[length(envipe_list)]]
-  current_list <- envipe_list # Trabajar con una copia local
+  # --- PASO 1: DEFINIR LA "RECETA MAESTRA" DE ARMONIZACIÓN ---
+  cat("  Paso 3a: Definiendo la receta maestra de renombrado y etiquetado...\n")
 
-  # 3b. Iterar y conformar cada data frame
-  for (name in names(current_list)) {
-    cat("  Conformando:", name, "\n")
-    df_original <- current_list[[name]]
+  master_recipe <- data.frame(
+    year_range = I(list(2023:2024, 2023:2024, 2023:2024, 2023:2024, 2025, 2025, 2025, 2025, 2021:2024, 2021:2024, 2025, 2025)),
+    original_name = c("AP5_4_8", "AP5_5_8", "AP5_4_9", "AP5_5_9", "AP5_4_11", "AP5_5_11", "AP5_4_12", "AP5_5_12", "AP5_4_10", "AP5_5_10", "AP5_4_9", "AP5_5_9"),
+    final_name = c("PERCEP_DESEMP_MP_ESTATAL", "PERCEP_CORRUP_MP_ESTATAL", "PERCEP_DESEMP_FGR", "PERCEP_CORRUP_FGR", "PERCEP_DESEMP_MP_ESTATAL", "PERCEP_CORRUP_MP_ESTATAL", "PERCEP_DESEMP_FGR", "PERCEP_CORRUP_FGR", "PERCEP_DESEMP_JUECES", "PERCEP_CORRUP_JUECES", "PERCEP_DESEMP_JUECES", "PERCEP_CORRUP_JUECES"),
+    final_label = c("Confianza en Ministerio Público (MP) y Fiscalías Estatales", "Percepción sobre corrupción de Ministerio Público (MP) y Fiscalías Estatales", "Confianza en Fiscalía General de la República (FGR)", "Percepción sobre corrupción de Fiscalía General de la República (FGR)", "Confianza en Ministerio Público (MP) y Fiscalías Estatales", "Percepción sobre corrupción de Ministerio Público (MP) y Fiscalías Estatales", "Confianza en Fiscalía General de la República (FGR)", "Percepción sobre corrupción de Fiscalía General de la República (FGR)", "Confianza en jueces", "Percepción sobre corrupción de jueces", "Confianza en jueces", "Percepción sobre corrupción de jueces")
+  )
+  # Añadir aquí el resto de las reglas para las demás variables que cambian...
 
-    # 3c. Respaldar etiquetas de RKWard
-    # Antes de modificar los tipos de datos (lo que puede eliminar atributos),
-    # se guardan todas las etiquetas existentes en un diccionario temporal.
-    label_dictionary <- sapply(df_original, rk.get.label)
+  # --- PASO 2: ARMONIZACIÓN SEMÁNTICA Y CAPTURA DE TODAS LAS ETIQUETAS ---
+  cat("  Paso 3b: Armonizando nombres y capturando todas las etiquetas...\n")
 
-    # 3d. Forzar tipos de datos según la plantilla
-    # Se recorren las columnas de la plantilla. Si una columna existe en el
-    # data frame actual pero tiene un tipo diferente, se convierte forzosamente.
-    for (col in names(template_df)) {
-      if (col %in% names(df_original)) {
-        target_class <- class(template_df[[col]])[1]
-        if (class(df_original[[col]])[1] != target_class) {
-          cat("    Cambiando tipo de '", col, "' a '", target_class, "'\n")
-          df_original[[col]] <- switch(target_class,
-                                       "factor"    = as.factor(df_original[[col]]),
-                                       "character" = as.character(df_original[[col]]),
-                                       "numeric"   = as.numeric(df_original[[col]]),
-                                       "integer"   = as.integer(df_original[[col]]),
-                                       df_original[[col]])
+  master_label_dictionary <- list()
+  harmonized_list <- list()
+
+  for (name in names(envipe_list)) {
+    df <- envipe_list[[name]]
+    year <- as.numeric(stringr::str_extract(name, "[0-9]{4}"))
+
+    # 1. Limpiar nombres y capturar etiquetas originales
+    names(df) <- gsub("_0([1-9])", "_\\1", toupper(trimws(names(df))))
+    original_labels <- sapply(df, rk.get.label)
+
+    # 2. Poblar el diccionario maestro con TODAS las etiquetas disponibles.
+    for(col_name in names(original_labels)){
+        label <- original_labels[[col_name]]
+        if(!is.null(label) && !(col_name %in% names(master_label_dictionary))){
+            master_label_dictionary[[col_name]] <- label
         }
-      }
     }
 
-    # 3e. Añadir la variable 'year'
-    # Se extrae el año del nombre del data frame y se añade como una nueva columna.
-    df_original$year <- as.numeric(stringr::str_extract(name, "[0-9]{4}"))
+    # 3. Renombrar las columnas del data.frame actual usando la receta
+    recipe_for_year <- master_recipe[sapply(master_recipe$year_range, function(yr) year %in% yr), ]
+    map_for_year <- setNames(recipe_for_year$final_name, recipe_for_year$original_name)
 
-    # 3f. Restaurar las etiquetas
-    # Se vuelven a aplicar las etiquetas guardadas al data frame ya conformado.
-    for (col_name in names(df_original)) {
-      if (!is.null(label_dictionary[[col_name]])) {
-        rk.set.label(df_original[[col_name]], label_dictionary[[col_name]])
+    # --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
+    # Reemplazar dplyr::rename con un bucle de R base que es robusto y funciona
+    for (old_name in names(map_for_year)) {
+      if (old_name %in% names(df)) {
+        names(df)[names(df) == old_name] <- map_for_year[[old_name]]
       }
     }
+    # --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
-    current_list[[name]] <- df_original
+    harmonized_list[[name]] <- df
   }
 
-  cat("--- Fase 3 completada. Todos los data frames son ahora consistentes. ---\n\n")
-  return(current_list)
+  # 4. SOBRESCRIBIR el diccionario maestro con las etiquetas correctas de la receta.
+  recipe_labels <- setNames(as.character(master_recipe$final_label), master_recipe$final_name)
+  for(final_name in names(recipe_labels)){
+    master_label_dictionary[[final_name]] <- recipe_labels[[final_name]]
+  }
+
+  # --- PASO 3: CONFORMIDAD ESTRUCTURAL POR RECONSTRUCCIÓN ---
+  cat("  Paso 3c: Reconstruyendo cada año para conformidad estructural...\n")
+  all_column_names <- unique(unlist(lapply(harmonized_list, names)))
+  type_map <- sapply(all_column_names, function(col) {
+    all_types <- sapply(harmonized_list, function(df) if (col %in% names(df)) class(df[[col]])[1] else NA)
+    all_types <- na.omit(all_types)
+    if ("numeric" %in% all_types) return("numeric")
+    if ("integer" %in% all_types) return("integer")
+    if ("factor" %in% all_types) return("factor")
+    return("character")
+  }, USE.NAMES = TRUE, simplify = FALSE)
+
+  final_list <- list()
+  for (name in names(harmonized_list)) {
+    source_df <- harmonized_list[[name]]
+    rebuilt_list <- list()
+    for (col_name in all_column_names) {
+      target_class <- type_map[[col_name]]
+      data_vector <- if (col_name %in% names(source_df)) source_df[[col_name]] else NA
+      if (target_class %in% c("numeric", "integer")) {
+        converted_vector <- suppressWarnings(as.numeric(as.character(data_vector)))
+        if (target_class == "integer") converted_vector <- as.integer(converted_vector)
+      } else if (target_class == "factor") {
+        converted_vector <- as.factor(data_vector)
+      } else {
+        converted_vector <- as.character(data_vector)
+      }
+      rebuilt_list[[col_name]] <- converted_vector
+    }
+    final_df <- as.data.frame(rebuilt_list, stringsAsFactors = FALSE)
+    final_df$year <- as.numeric(stringr::str_extract(name, "[0-9]{4}"))
+    final_list[[name]] <- final_df
+  }
+
+  attr(final_list, "master_labels") <- master_label_dictionary
+  return(final_list)
 })
 
-
 # =============================================================================
-# FASE 4: COMBINACIÓN DE DATOS Y ETIQUETADO FINAL
+# FASE 4: COMBINACIÓN Y ETIQUETADO FINAL (CON TODAS LAS ETIQUETAS)
 # =============================================================================
-# Objetivo: Unir los data frames (ahora consistentes) en una sola tabla y
-#           aplicar las etiquetas finales.
-
 combined_df <- local({
-  cat("--- Ejecutando Fase 4: Combinando y etiquetando ---\n")
+  cat("--- Ejecutando Fase 4: Combinando y Etiquetando Datos Finales ---\n")
 
-  # 4a. Respaldar etiquetas desde la plantilla
-  # Se extraen las etiquetas del data frame más reciente, que servirá como
-  # fuente de verdad para el data frame combinado.
-  label_source_df <- envipe_list[[length(envipe_list)]]
-  label_dictionary <- sapply(label_source_df, rk.get.label)
+  master_labels <- attr(envipe_list, "master_labels")
 
-  # 4b. Combinar los data frames
-  # Con la estructura ya estandarizada, bind_rows() funciona de forma segura.
   cat("  Combinando los datos...\n")
   final_df <- dplyr::bind_rows(envipe_list)
 
-  # 4c. Restaurar todas las etiquetas en la tabla combinada
-  cat("  Restaurando etiquetas...\n")
+  cat("  Aplicando todas las etiquetas de variables desde el diccionario maestro...\n")
   for (col_name in names(final_df)) {
-    if (!is.null(label_dictionary[[col_name]])) {
-      rk.set.label(final_df[[col_name]], label_dictionary[[col_name]])
+    if (col_name %in% names(master_labels)) {
+      rk.set.label(final_df[[col_name]], master_labels[[col_name]])
     }
   }
 
-  # 4d. Crear y etiquetar nuevas variables
-  # Se añade una columna 'n' para conteos y se etiquetan 'n' y 'year'.
-  cat("  Etiquetando variables nuevas...\n")
-  final_df$n <- 1
-  rk.set.label(final_df$n, "Conteo de casos (n=1)")
   rk.set.label(final_df$year, "Año de la encuesta")
 
-  cat("--- Fase 4 completada. Objeto 'combined_df' creado. ---\n\n")
+  cat("--- Fase 4 completada. Objeto 'combined_df' creado con datos y todas las etiquetas correctas. ---\n\n")
   return(final_df)
 })
 
@@ -273,27 +292,3 @@ combined_df <- combined_df %>%
   mutate(across(where(is.factor), ~ fct_relabel(., ~ trimws(.))))
 
 cat("--- Fase 6 completada. ---\n\n")
-
-
-# =============================================================================
-# FASE 7: CREACIÓN DEL OBJETO DE DISEÑO DE ENCUESTA COMPLEJA
-# =============================================================================
-# Objetivo: Preparar el data frame para análisis estadístico que tome en cuenta
-#           el diseño muestral de la ENVIPE (estratificación, conglomerados, etc.).
-
-survey.design <- local({
-  cat("--- Ejecutando Fase 7: Creando objeto de diseño de encuesta ---\n")
-
-  # Se utiliza la función svydesign del paquete 'survey'.
-  # ids = ~UPM: Define las Unidades Primarias de Muestreo.
-  # strata = ~EST_DIS: Define los estratos.
-  # weights = ~FAC_ELE: Define el factor de ponderación.
-  # nest = TRUE: Indica que los conglomerados están anidados dentro de los estratos.
-  design_object <- svydesign(ids = ~UPM, strata = ~EST_DIS, weights = ~FAC_ELE, data = combined_df, nest = TRUE)
-
-  cat("--- Fase 7 completada. Objeto 'survey.design' creado. ---\n")
-  rk.header("Create Survey Design results")
-  rk.header("Survey design object saved as: survey.design")
-
-  return(design_object)
-})
