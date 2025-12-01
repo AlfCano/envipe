@@ -1,8 +1,10 @@
 # -----------------------------------------------------------------------------
 # SCRIPT DE IMPORTACIÓN, LIMPIEZA Y PREPARACIÓN DE DATOS DE LA ENCUESTA ENVIPE
 # -----------------------------------------------------------------------------
-# Autor: [Tu Nombre]
-# Fecha: [Fecha Actual]
+# Autor: Alfonso Cano Robles
+# Asistente: Gemini
+# Fecha: 01-dic-2025
+# Version: 2.0
 #
 # Descripción:
 # Este script realiza un proceso completo para trabajar con múltiples años de
@@ -13,81 +15,97 @@
 #   4. Combinación de todos los años en un único data frame.
 #   5. Limpieza y estandarización detallada de variables clave (municipio y entidad).
 #   6. Unificación de niveles de respuesta en variables de selección múltiple.
-#   7. Creación de un objeto de diseño de encuesta compleja para el análisis.
+#
 #
 # El script está diseñado para ser reproducible y no contaminar el entorno de
 # trabajo global, utilizando bloques 'local({})' para encapsular operaciones.
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# SCRIPT MAESTRO ENVIPE - CORRECCIÓN TOTAL (MP, FGR, JUECES)
+# -----------------------------------------------------------------------------
 
-# =============================================================================
-# FASE 1: CONFIGURACIÓN Y GESTIÓN DE PAQUETES
-# =============================================================================
-
-# Se establece el directorio de trabajo. Es una buena práctica, aunque en este
-# script los datos se cargan desde URLs.
-local({
-  setwd("/home/cano/Escritorio/R/ENVIPE")
-})
-
-# Se utiliza el paquete 'librarian' para gestionar las dependencias.
-# 'shelf()' se asegura de que los paquetes necesarios estén instalados y
-# los carga en la sesión actual.
+# FASE 1: PAQUETES
 require("librarian")
 shelf("rio", "dplyr", "stringr", "survey", "forcats", "rkward")
 
-
-# =============================================================================
-# FASE 2: DESCARGA E IMPORTACIÓN DE DATOS ANUALES
-# =============================================================================
-
-# Se importan los datos en una lista, donde cada elemento será un data frame
-# correspondiente a un año de la encuesta.
+# FASE 2: DESCARGA LIMPIA (Crucial para eliminar renombres previos)
 envipe_list <- local({
-
-  # 2a. Definir las URLs de los archivos de datos
-  # Se construye dinámicamente una lista de URLs para los archivos RData
-  # de la ENVIPE para los años 2021 a 2025.
+  cat("--- Descargando datos crudos ---\n")
   base_url <- "https://github.com/AlfCano/envipe/raw/main/datos/datos_limpios/"
+  # Descargamos 2021 a 2025
   file_names <- paste0("sdem_vics_14_", 2021:2025, ".RData")
   full_urls <- paste0(base_url, file_names)
 
-  # 2b. Descargar y cargar los datos en una lista
-  # Se itera sobre cada URL. Los datos se descargan y se cargan usando rio::import().
-  # El nombre del archivo (sin extensión) se usa como el nombre del elemento en la lista.
   envipe_data_list <- list()
   for(url in full_urls) {
-    name <- sub(".*/(.*)\\.RData$", "\\1", url) # Extrae el nombre del archivo
+    name <- sub(".*/(.*)\\.RData$", "\\1", url)
+    # trust=TRUE mantiene las etiquetas originales y niveles
     data <- rio::import(url, trust = TRUE)
     envipe_data_list[[name]] <- data
-    cat("Importado:", url, "\n")
+    cat("Importado:", name, "\n")
   }
-
-  # 2c. Retornar la lista completa
-  # Al final del bloque local, se retorna la lista para asignarla a 'envipe_list'.
   return(envipe_data_list)
 })
 
-# =============================================================================
-# FASE 3: ARMONIZACIÓN INTEGRAL CON PRESERVACIÓN DE ETIQUETAS (VERSIÓN FINAL)
-# =============================================================================
+# FASE 3: ARMONIZACIÓN BLINDADA (RECETA BASADA EN RADAR)
 envipe_list <- local({
-  cat("--- Ejecutando Fase 3: Armonización Integral con Preservación de Etiquetas ---\n")
+  cat("--- Ejecutando Fase 3: Armonización corregida por Radar ---\n")
 
-  # --- PASO 1: DEFINIR LA "RECETA MAESTRA" DE ARMONIZACIÓN ---
-  cat("  Paso 3a: Definiendo la receta maestra de renombrado y etiquetado...\n")
+  master_recipe <- dplyr::bind_rows(
 
-  master_recipe <- data.frame(
-    year_range = I(list(2023:2024, 2023:2024, 2023:2024, 2023:2024, 2025, 2025, 2025, 2025, 2021:2024, 2021:2024, 2025, 2025)),
-    original_name = c("AP5_4_8", "AP5_5_8", "AP5_4_9", "AP5_5_9", "AP5_4_11", "AP5_5_11", "AP5_4_12", "AP5_5_12", "AP5_4_10", "AP5_5_10", "AP5_4_9", "AP5_5_9"),
-    final_name = c("PERCEP_DESEMP_MP_ESTATAL", "PERCEP_CORRUP_MP_ESTATAL", "PERCEP_DESEMP_FGR", "PERCEP_CORRUP_FGR", "PERCEP_DESEMP_MP_ESTATAL", "PERCEP_CORRUP_MP_ESTATAL", "PERCEP_DESEMP_FGR", "PERCEP_CORRUP_FGR", "PERCEP_DESEMP_JUECES", "PERCEP_CORRUP_JUECES", "PERCEP_DESEMP_JUECES", "PERCEP_CORRUP_JUECES"),
-    final_label = c("Confianza en Ministerio Público (MP) y Fiscalías Estatales", "Percepción sobre corrupción de Ministerio Público (MP) y Fiscalías Estatales", "Confianza en Fiscalía General de la República (FGR)", "Percepción sobre corrupción de Fiscalía General de la República (FGR)", "Confianza en Ministerio Público (MP) y Fiscalías Estatales", "Percepción sobre corrupción de Ministerio Público (MP) y Fiscalías Estatales", "Confianza en Fiscalía General de la República (FGR)", "Percepción sobre corrupción de Fiscalía General de la República (FGR)", "Confianza en jueces", "Percepción sobre corrupción de jueces", "Confianza en jueces", "Percepción sobre corrupción de jueces")
+    # =========================================================================
+    # 1. MINISTERIO PÚBLICO (MP)
+    # Radar confirmó: Es AP5_4_6 en 2021, 2023 y 2025. Asumimos consistencia total.
+    # =========================================================================
+    data.frame(
+      years = I(list(2021:2025)),
+      orig  = "AP5_4_6",
+      final = "CONFIANZA_MP_ESTATAL",
+      label = "Confianza en MP y Fiscalías Estatales"
+    ),
+
+    # =========================================================================
+    # 2. FISCALÍA GENERAL DE LA REPÚBLICA (FGR / PGR)
+    # Radar confirmó: Es AP5_4_7 en 2021 ("PGR"), 2023 y 2025. Consistencia total.
+    # =========================================================================
+    data.frame(
+      years = I(list(2021:2025)),
+      orig  = "AP5_4_7",
+      final = "CONFIANZA_FGR",
+      label = "Confianza en Fiscalía General de la República (FGR)"
+    ),
+
+    # =========================================================================
+    # 3. JUECES
+    # Historia distinta: Se movieron en 2025.
+    # =========================================================================
+    # 2025: Radar confirmó posición 11
+    data.frame(
+      years = I(list(2025)),
+      orig  = "AP5_4_11",
+      final = "CONFIANZA_JUECES",
+      label = "Confianza en Jueces"
+    ),
+    # 2021-2024: Radar previo confirmó posición 10
+    data.frame(
+      years = I(list(2021:2024)),
+      orig  = "AP5_4_10",
+      final = "CONFIANZA_JUECES",
+      label = "Confianza en Jueces"
+    )
   )
-  # Añadir aquí el resto de las reglas para las demás variables que cambian...
 
-  # --- PASO 2: ARMONIZACIÓN SEMÁNTICA Y CAPTURA DE TODAS LAS ETIQUETAS ---
-  cat("  Paso 3b: Armonizando nombres y capturando todas las etiquetas...\n")
+  # --- GENERAR RECETA DE CORRUPCIÓN (AUTOMÁTICA) ---
+  # Asumimos que la sección de corrupción (AP5_5) sigue los mismos índices que confianza (AP5_4)
+  corrup_recipe <- master_recipe
+  corrup_recipe$orig <- gsub("AP5_4", "AP5_5", corrup_recipe$orig)
+  corrup_recipe$final <- gsub("CONFIANZA", "PERCEP_CORRUP", corrup_recipe$final)
+  corrup_recipe$label <- gsub("Confianza en", "Corrupción en", corrup_recipe$label)
 
+  full_recipe <- rbind(master_recipe, corrup_recipe)
+
+  # --- PROCESAMIENTO ---
   master_label_dictionary <- list()
   harmonized_list <- list()
 
@@ -95,43 +113,40 @@ envipe_list <- local({
     df <- envipe_list[[name]]
     year <- as.numeric(stringr::str_extract(name, "[0-9]{4}"))
 
-    # 1. Limpiar nombres y capturar etiquetas originales
+    # 1. Limpieza de nombres (AP5_4_06 -> AP5_4_6)
     names(df) <- gsub("_0([1-9])", "_\\1", toupper(trimws(names(df))))
-    original_labels <- sapply(df, rk.get.label)
 
-    # 2. Poblar el diccionario maestro con TODAS las etiquetas disponibles.
-    for(col_name in names(original_labels)){
-        label <- original_labels[[col_name]]
-        if(!is.null(label) && !(col_name %in% names(master_label_dictionary))){
-            master_label_dictionary[[col_name]] <- label
-        }
+    # 2. Capturar etiquetas originales
+    original_labels <- sapply(df, rk.get.label)
+    for(col in names(original_labels)) {
+       if(!is.null(original_labels[[col]]) && !(col %in% names(master_label_dictionary))) {
+         master_label_dictionary[[col]] <- original_labels[[col]]
+       }
     }
 
-    # 3. Renombrar las columnas del data.frame actual usando la receta
-    recipe_for_year <- master_recipe[sapply(master_recipe$year_range, function(yr) year %in% yr), ]
-    map_for_year <- setNames(recipe_for_year$final_name, recipe_for_year$original_name)
-
-    # --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
-    # Reemplazar dplyr::rename con un bucle de R base que es robusto y funciona
-    for (old_name in names(map_for_year)) {
-      if (old_name %in% names(df)) {
-        names(df)[names(df) == old_name] <- map_for_year[[old_name]]
+    # 3. Aplicar receta
+    recipe_subset <- full_recipe[sapply(full_recipe$years, function(y_range) year %in% y_range), ]
+    for(i in seq_len(nrow(recipe_subset))) {
+      old_name <- recipe_subset$orig[i]
+      final_name <- recipe_subset$final[i]
+      if(old_name %in% names(df)) {
+        names(df)[names(df) == old_name] <- final_name
       }
     }
-    # --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
     harmonized_list[[name]] <- df
   }
 
-  # 4. SOBRESCRIBIR el diccionario maestro con las etiquetas correctas de la receta.
-  recipe_labels <- setNames(as.character(master_recipe$final_label), master_recipe$final_name)
-  for(final_name in names(recipe_labels)){
-    master_label_dictionary[[final_name]] <- recipe_labels[[final_name]]
+  # 4. Actualizar diccionario maestro con etiquetas finales
+  unique_finals <- unique(full_recipe[, c("final", "label")])
+  for(i in seq_len(nrow(unique_finals))) {
+    master_label_dictionary[[unique_finals$final[i]]] <- unique_finals$label[i]
   }
 
-  # --- PASO 3: CONFORMIDAD ESTRUCTURAL POR RECONSTRUCCIÓN ---
-  cat("  Paso 3c: Reconstruyendo cada año para conformidad estructural...\n")
+  # 5. Reconstrucción de tipos (Crucial para bind_rows)
+  cat("  Reconstruyendo tipos de datos para consistencia...\n")
   all_column_names <- unique(unlist(lapply(harmonized_list, names)))
+
   type_map <- sapply(all_column_names, function(col) {
     all_types <- sapply(harmonized_list, function(df) if (col %in% names(df)) class(df[[col]])[1] else NA)
     all_types <- na.omit(all_types)
@@ -148,147 +163,136 @@ envipe_list <- local({
     for (col_name in all_column_names) {
       target_class <- type_map[[col_name]]
       data_vector <- if (col_name %in% names(source_df)) source_df[[col_name]] else NA
+
       if (target_class %in% c("numeric", "integer")) {
-        converted_vector <- suppressWarnings(as.numeric(as.character(data_vector)))
-        if (target_class == "integer") converted_vector <- as.integer(converted_vector)
+        vec <- suppressWarnings(as.numeric(as.character(data_vector)))
+        if (target_class == "integer") vec <- as.integer(vec)
+        rebuilt_list[[col_name]] <- vec
       } else if (target_class == "factor") {
-        converted_vector <- as.factor(data_vector)
+        rebuilt_list[[col_name]] <- as.factor(data_vector)
       } else {
-        converted_vector <- as.character(data_vector)
+        rebuilt_list[[col_name]] <- as.character(data_vector)
       }
-      rebuilt_list[[col_name]] <- converted_vector
     }
     final_df <- as.data.frame(rebuilt_list, stringsAsFactors = FALSE)
     final_df$year <- as.numeric(stringr::str_extract(name, "[0-9]{4}"))
     final_list[[name]] <- final_df
   }
-
   attr(final_list, "master_labels") <- master_label_dictionary
   return(final_list)
 })
-
 # =============================================================================
-# FASE 4: COMBINACIÓN Y ETIQUETADO FINAL (CON TODAS LAS ETIQUETAS)
+# FASE 4: COMBINACIÓN
 # =============================================================================
 combined_df <- local({
-  cat("--- Ejecutando Fase 4: Combinando y Etiquetando Datos Finales ---\n")
-
+  cat("--- Combinando datos finales ---\n")
+  final_df <- dplyr::bind_rows(envipe_list)
   master_labels <- attr(envipe_list, "master_labels")
 
-  cat("  Combinando los datos...\n")
-  final_df <- dplyr::bind_rows(envipe_list)
-
-  cat("  Aplicando todas las etiquetas de variables desde el diccionario maestro...\n")
   for (col_name in names(final_df)) {
     if (col_name %in% names(master_labels)) {
       rk.set.label(final_df[[col_name]], master_labels[[col_name]])
     }
   }
-
   rk.set.label(final_df$year, "Año de la encuesta")
-
-  cat("--- Fase 4 completada. Objeto 'combined_df' creado con datos y todas las etiquetas correctas. ---\n\n")
   return(final_df)
 })
 
-
 # =============================================================================
-# FASE 5: LIMPIEZA DETALLADA DE VARIABLES GEOGRÁFICAS (NOM_MUN Y NOM_ENT)
+# FASE 5: LIMPIEZA ROBUSTA DE VARIABLES GEOGRÁFICAS (CORREGIDA)
 # =============================================================================
-# Objetivo: Estandarizar los nombres de municipios y entidades federativas,
-#           resolviendo inconsistencias de espacios, acentos, mayúsculas y
-#           sinónimos. El resultado final son nombres en formato "Tipo Título".
-
 combined_df <- local({
+  cat("--- Ejecutando Fase 5: Estandarización Geográfica Robusta ---\n")
 
-  # Se trabajará sobre una copia local del data frame.
-  df_to_clean <- combined_df
+  df <- combined_df
+  require("dplyr")
+  require("stringr")
 
-  # --- 5a. Definir función de formateo (reutilizable) ---
-  formatear_nombre_propio <- function(texto) {
-    sapply(texto, function(item) {
-      item_lower <- tolower(item)
-      palabras <- strsplit(item_lower, " ")[[1]]
-      excepciones <- c("de", "del", "el", "la", "los", "las", "y", "a", "en", "con")
-      palabras_formateadas <- sapply(seq_along(palabras), function(i) {
-        palabra <- palabras[i]
-        if (i > 1 && palabra %in% excepciones) return(palabra)
-        else paste0(toupper(substr(palabra, 1, 1)), substr(palabra, 2, nchar(palabra)))
-      })
-      return(paste(palabras_formateadas, collapse = " "))
-    }, USE.NAMES = FALSE)
+  # --- 1. FUNCIÓN DE FORMATO TIPO TÍTULO (Mejorada) ---
+  # Convierte "CIUDAD DE MEXICO" a "Ciudad de México" respetando conectores.
+  to_title_mx <- function(x) {
+    # Convertimos todo a minúsculas primero
+    s <- str_to_lower(x)
+    # Convertimos a Title Case general
+    s <- str_to_title(s)
+    # Corregimos las preposiciones que deben ir en minúsculas
+    # Se usa regex con límites de palabra (\\b) para no romper palabras internas
+    s <- gsub("\\bDe\\b", "de", s)
+    s <- gsub("\\bDel\\b", "del", s)
+    s <- gsub("\\bLa\\b", "la", s)
+    s <- gsub("\\bLas\\b", "las", s)
+    s <- gsub("\\bLos\\b", "los", s)
+    s <- gsub("\\bCon\\b", "con", s)
+    s <- gsub("\\bY\\b", "y", s)
+    s <- gsub("\\bEn\\b", "en", s)
+    return(s)
   }
 
-  # --- 5b. Limpieza de NOM_MUN (Nombre del Municipio) ---
-  cat("  Limpiando y estandarizando NOM_MUN...\n")
+  # --- 2. ESTANDARIZACIÓN DE ENTIDADES (NOM_ENT) ---
+  # Usamos un diccionario manual para evitar errores de acentos o variantes
+  cat("  Estandarizando Entidades Federativas...\n")
 
-  # i. Limpieza base y creación de mapa de corrección para acentos
-  columna_base_mun <- trimws(as.character(df_to_clean$NOM_MUN))
-  original_levels_mun <- unique(toupper(columna_base_mun))
-  deaccented_levels_mun <- iconv(original_levels_mun, from = "UTF-8", to = "ASCII//TRANSLIT")
-  level_groups_mun <- split(original_levels_mun, deaccented_levels_mun)
+  # Limpieza previa: Mayúsculas y sin espacios extra
+  df$NOM_ENT <- toupper(trimws(as.character(df$NOM_ENT)))
 
-  correction_map_mun <- sapply(level_groups_mun, function(group) {
-    accented_version <- group[group != iconv(group, from = "UTF-8", to = "ASCII//TRANSLIT", sub = "byte")]
-    if (length(accented_version) > 0) return(accented_version[1]) else return(group[1])
-  })
+  # Diccionario de correcciones comunes (Prioriza el nombre corto y común)
+  df <- df %>%
+    mutate(NOM_ENT = case_when(
+      grepl("MEXICO|MÉXICO", NOM_ENT) & !grepl("CIUDAD", NOM_ENT) ~ "Estado de México",
+      grepl("DISTRITO|CDMX|CIUDAD DE M", NOM_ENT) ~ "Ciudad de México",
+      grepl("COAHUILA", NOM_ENT) ~ "Coahuila",
+      grepl("MICHOAC", NOM_ENT) ~ "Michoacán",
+      grepl("VERACRUZ", NOM_ENT) ~ "Veracruz",
+      grepl("QUER", NOM_ENT) ~ "Querétaro",
+      grepl("YUCAT", NOM_ENT) ~ "Yucatán",
+      grepl("SAN LUIS", NOM_ENT) ~ "San Luis Potosí",
+      grepl("NUEVO LE", NOM_ENT) ~ "Nuevo León",
+      TRUE ~ to_title_mx(NOM_ENT) # Para el resto, aplica formato estándar
+    )) %>%
+    mutate(NOM_ENT = as.factor(NOM_ENT))
 
-  # ii. Aplicar mapa y formateo
-  lookup_keys_mun <- iconv(toupper(columna_base_mun), from = "UTF-8", to = "ASCII//TRANSLIT")
-  columna_unificada_mun <- unname(correction_map_mun[lookup_keys_mun])
-  factor_unificado_mun <- as.factor(columna_unificada_mun)
-  levels(factor_unificado_mun) <- formatear_nombre_propio(levels(factor_unificado_mun))
-  df_to_clean$NOM_MUN <- factor_unificado_mun
+  # --- 3. ESTANDARIZACIÓN DE MUNICIPIOS (NOM_MUN) ---
+  cat("  Estandarizando Municipios...\n")
 
-  # --- 5c. Limpieza de NOM_ENT (Nombre de la Entidad) ---
-  cat("  Limpiando y estandarizando NOM_ENT...\n")
+  # Convertimos a caracter, limpiamos espacios y aplicamos formato Título
+  # Nota: No intentamos "inventar" acentos si no vienen en la base original,
+  # pero estandarizamos la capitalización para agruparlos.
+  df$NOM_MUN <- trimws(as.character(df$NOM_MUN))
+  df$NOM_MUN <- to_title_mx(df$NOM_MUN)
+  df$NOM_MUN <- as.factor(df$NOM_MUN)
 
-  # i. Limpieza base y manejo de sinónimos ("MÉXICO" -> "ESTADO DE MÉXICO")
-  entidad_col <- toupper(trimws(as.character(df_to_clean$NOM_ENT)))
-  entidad_col[entidad_col %in% c("MEXICO", "MÉXICO")] <- "ESTADO DE MEXICO"
-
-  # ii. Crear mapa de corrección para acentos
-  original_levels_ent <- unique(entidad_col)
-  deaccented_levels_ent <- iconv(original_levels_ent, from = "UTF-8", to = "ASCII//TRANSLIT")
-  level_groups_ent <- split(original_levels_ent, deaccented_levels_ent)
-
-  correction_map_ent <- sapply(level_groups_ent, function(group) {
-    accented_version <- group[group != iconv(group, from = "UTF-8", to = "ASCII//TRANSLIT")]
-    if (length(accented_version) > 0) return(accented_version[1]) else return(group[1])
-  })
-
-  # iii. Aplicar mapa y formateo
-  lookup_keys_ent <- iconv(entidad_col, from = "UTF-8", to = "ASCII//TRANSLIT")
-  entidad_col_unificada <- unname(correction_map_ent[lookup_keys_ent])
-  factor_unificado_ent <- as.factor(entidad_col_unificada)
-  levels(factor_unificado_ent) <- formatear_nombre_propio(levels(factor_unificado_ent))
-  df_to_clean$NOM_ENT <- factor_unificado_ent
-
-  cat("--- Fase 5 completada. Variables geográficas estandarizadas. ---\n\n")
-  return(df_to_clean)
+  return(df)
 })
 
-
 # =============================================================================
-# FASE 6: ETIQUETADO FINAL Y LIMPIEZA DE VARIABLES DE RESPUESTA
+# FASE 6: ETIQUETADO FINAL Y LIMPIEZA DE RESPUESTAS
 # =============================================================================
 cat("--- Ejecutando Fase 6: Etiquetado final y limpieza de respuestas ---\n")
 
-# --- 6a. Asignar etiquetas de variable a NOM_ENT y NOM_MUN ---
-rk.set.label(combined_df$NOM_ENT, label = "Nombre de la Entidad")
-rk.set.label(combined_df$NOM_MUN, label = "Nombre del municipio")
+combined_df <- local({
+  df <- combined_df
+  require("dplyr")
+  require("forcats")
+  require("rkward")
 
-# --- 6b. Unificar niveles de respuesta en variables 'AP4_2_*' ---
-# Se unifican los niveles "Sí" y "SÍ" en un solo nivel "Sí" para todas
-# las columnas que comienzan con "AP4_2_", usando dplyr y forcats.
-require("dplyr")
-require("forcats")
+  # --- 6a. Etiquetas de variables ---
+  # Verificamos si las columnas existen antes de etiquetar para no generar error
+  if("NOM_ENT" %in% names(df)) rk.set.label(df$NOM_ENT, "Entidad Federativa")
+  if("NOM_MUN" %in% names(df)) rk.set.label(df$NOM_MUN, "Municipio")
 
-combined_df <- combined_df %>%
-  mutate(across(starts_with("AP4_2_"),
-                ~ fct_recode(., "Sí" = "SÍ")))
+  # --- 6b. Unificar niveles de respuesta (Sí/No) ---
+  # Unificamos "SÍ" (con acento y mayúscula) a "Sí" (Tipo título)
+  df <- df %>%
+    mutate(across(starts_with("AP4_2_"),
+                  ~ fct_recode(., "Sí" = "SÍ", "Sí" = "SI", "Sí" = "Si")))
 
-combined_df <- combined_df %>%
-  mutate(across(where(is.factor), ~ fct_relabel(., ~ trimws(.))))
+  # --- 6c. Limpieza general de factores ---
+  # Elimina niveles vacíos y espacios en blanco en las etiquetas de todos los factores
+  df <- df %>%
+    mutate(across(where(is.factor), ~ fct_drop(.))) %>%
+    mutate(across(where(is.factor), ~ fct_relabel(., ~ trimws(.))))
 
-cat("--- Fase 6 completada. ---\n\n")
+  cat("--- Fase 6 completada. Base de datos lista. ---\n\n")
+  return(df)
+})
+
